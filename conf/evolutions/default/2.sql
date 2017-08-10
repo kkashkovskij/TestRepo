@@ -2,7 +2,7 @@
 
 #--- !Ups
 
-CREATE TABLE articles (
+CREATE TABLE Articles (
 
   id SERIAL PRIMARY KEY ,
   shortName VARCHAR(255),

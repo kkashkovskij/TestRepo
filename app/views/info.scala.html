@@ -6,11 +6,10 @@
         childrenList: mutable.MutableList[String],
         modify: Form[ModifyForm])(implicit messages:Messages,request: RequestHeader, messagesProvider: MessagesProvider)
 
-
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        @* Here's where we render the page title `String`. *@
+
         <title>@fullName</title>
         <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
         <link rel="shortcut icon" type="image/png" href="@routes.Assets.versioned("images/favicon.png")">
@@ -18,26 +17,25 @@
     </head>
     <body>
 
-        <ul>Путь: @path</ul>
-        <ul>Название: @fullName</ul>
-        <ul>текст: @text</ul>
-        <ul>Список входящих глав и статей:</ul>
-        @if(childrenList != null){
-            @for(c <- childrenList){
-                <ul>@c</ul>
+        <li>
+            <ul>Путь: @path</ul>
+            <ul>Название: @fullName</ul>
+            <ul>текст: @text</ul>
+            <ul>Список входящих глав и статей:</ul>
+            @if(childrenList != null) {
+                @for(c <- childrenList) {
+                    <ul>@c</ul>
+                }
             }
-        }
+        </li>
 
-        @helper.form(action = routes.Application.modify(path)) {
+        @helper.form(action = routes.Application.edit(path)) {
             @helper.inputText(modify("shortName"))
             @helper.inputText(modify("fullName"))
             @helper.inputText(modify("text"))
 
             <button type="submit">Modify</button>
         }
-
-        @* And here's where we render the `Html` object containing
-        * the page content. *@
 
     </body>
 </html>

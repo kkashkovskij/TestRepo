@@ -2,7 +2,7 @@
 
 #--- !Ups
 
-CREATE TABLE chapters (
+CREATE TABLE Chapters (
 
   id SERIAL PRIMARY KEY,
   shortName VARCHAR(255),

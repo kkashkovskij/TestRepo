@@ -9,7 +9,7 @@ GET    /delete                        controllers.Application.delete(s: String)
 # Home page
 POST    /insert/article                controllers.Application.insertArticle
 POST    /insert/chapter                controllers.Application.insertChapter
-POST    /modify                        controllers.Application.modify(s: String)
+POST    /modify                        controllers.Application.edit(s: String)
 
 # Map static resources from the /public folder to the /assets URL path
 #GET     /assets/*file               controllers.Assets.at(path="/public", file)

@@ -1,6 +1,6 @@
-name := """play-scala-starter-example"""
+name := """Book"""
 
-version := "1.0-SNAPSHOT"
+version := "0.1 - Beta"
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala).disablePlugins(PlayFilters)
 

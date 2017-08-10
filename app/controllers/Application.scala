@@ -34,22 +34,22 @@ class Application @Inject() (
         numbersList.clear()
         treeRoots.clear()
         getFromdb()
-        setTreeNodes(null, 1)
+        setTreeNodes(null, 1) //TODO null, 1 - magic number
         getAllPath()
 
-
+//TODO все названия методов, классов, параметров должны быть смысловыми, чтобы прочитав можно было понять про что идет речь, что это за параметр, что будет делать метод, про что этот класс и т.д.
       Ok(views.html.index(articleForm, chapterForm, pathList, pathMap))} }
   }
 
   def info(s: String) = Action{implicit request =>
-    val messages: Messages = request.messages
+
     val fullName: String = pathMap.get(s).orNull.getFullName
     val text: String = pathMap.getOrElse(s, null).getText
-    val children: mutable.MutableList[String] = pathMap.getOrElse(s, null).getChildrenList
-    Redirect(routes.Application.info(s))
-        Ok(views.html.info(s,fullName,text, children, modifyForm))
+    val children: mutable.MutableList[String] = pathMap.getOrElse(s, null).getChildrenList // TODO тут фигня какя-то нужно смотреть
+    Ok(views.html.info(s,fullName,text, children, modifyForm))
   }
 
+  //TODO здесь нужно всего лишь Id передавать и удалять по Id, можно сделать два метода deleteChapter deleteArticle
   def delete(s: String) = Action{
 
         if (pathMap.get(s).orNull.getType == "chapter") chapterDao.delete(pathMap.get(s).orNull.getId)
@@ -58,9 +58,11 @@ class Application @Inject() (
     Redirect(routes.Application.index)
   }
 
-  def modify(s: String) = Action{implicit request =>
+  def edit(s: String) = Action{ implicit request =>
 
     val mod: ModifyForm = modifyForm.bindFromRequest.get
+
+    //TODO нужно нормально ресолвить форму с паттернматчингом если нужно на конкретный case class, без нулов, без instanceOf
     val instance = pathMap.getOrElse(s, null)
     if (instance.getType == "article")
       articleDao.modify(instance.getId, mod.shortName, mod.fullName, mod.text)
@@ -88,6 +90,7 @@ class Application @Inject() (
     )(ArticleFormModel.apply)(ArticleFormModel.unapply)
   )
 
+  //TODO Лишняя форма
   val modifyForm: Form[ModifyForm] = Form(
     mapping(
       "shortName" -> text,
@@ -119,7 +122,7 @@ class Application @Inject() (
   }
 
 
-
+  //TODO избавиться от var
   var chapters: Seq[Chapter] = Seq[Chapter]()
   var articles: Seq[Article] = Seq[Article]()
   var treeRoots: mutable.MutableList[TreeNode] = new mutable.MutableList[TreeNode]()
@@ -132,13 +135,14 @@ class Application @Inject() (
 
       val chaptersF: Future[Seq[Chapter]] = chapterDao.all()
       val articlesF: Future[Seq[Article]] = articleDao.all()
+    //TODO убрать эвейты
       chapters = Await.result(chaptersF, 1.second).sortBy(_.id)
       articles = Await.result(articlesF, 1.second).sortBy(_.id)
 
     }
 
 
-
+  //TODO такие методы сеттеры с возвращаемым значением unit нужно избегать
   def setTreeNodes (treeNode: TreeNode, count: Int): Unit ={
     var bufferNode: TreeNode = null
     var i: Int = 1
@@ -202,16 +206,11 @@ class Application @Inject() (
 
 case class ChapterFormModel(shortName: String, fullName: String, text: String, parentId: Int)
 
-object ChapterFormModel{}
-
 case class ArticleFormModel(shortName: String, fullName: String, text: String, chapterId: Int)
-
-object ArticleFormModel{}
 
 case class ModifyForm(shortName: String, fullName: String, text: String)
 
-object ModifyForm
-
+//TODO переделать структуру дерева
 case class TreeNode (data: Chapter, parent: TreeNode, chapterNumber: Int, children: mutable.MutableList[TreeNode], articleList: mutable.MutableList[Article]) extends Entity{
   def addChild(treeNode: TreeNode): Unit ={
     children.+=:(treeNode)
