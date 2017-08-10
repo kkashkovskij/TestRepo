@@ -1,0 +1,14 @@
+@(rootId: Int,lvl: Int, art: Seq[Article], chap: Seq[Chapter])
+
+
+    @for(ch <- chap) {
+    @if(((rootId == 0) && (ch.parentId.isEmpty)) || (!ch.parentId.isEmpty) && (rootId == ch.parentId.getOrElse(0))) {
+        <li><p><a href = "info.scala.html" > @lvl @ch.shortName</a></p></li>
+        @iteration(ch.id,lvl+1, art, chap)
+        @for(a <- art) {
+            @if(ch.id == a.chapterId) {
+                <li><a href=" "> @a.shortName</a></li>
+            }
+        }
+    }
+}

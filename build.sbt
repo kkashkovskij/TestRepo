@@ -1,17 +1,19 @@
-name := "untitled"
- 
-version := "1.0" 
-      
-lazy val `untitled` = (project in file(".")).enablePlugins(PlayScala)
+name := """play-scala-starter-example"""
 
-resolvers += "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
-      
-resolvers += "Akka Snapshot Repository" at "http://repo.akka.io/snapshots/"
-      
-scalaVersion := "2.12.2"//
+version := "1.0-SNAPSHOT"
 
-libraryDependencies ++= Seq( jdbc , ehcache , ws , specs2 % Test , guice )
+lazy val root = (project in file(".")).enablePlugins(PlayScala).disablePlugins(PlayFilters)
 
-unmanagedResourceDirectories in Test <+=  baseDirectory ( _ /"target/web/public/test" )  
+resolvers += Resolver.sonatypeRepo("snapshots")
 
-      
+scalaVersion := "2.12.2"
+
+libraryDependencies += guice
+libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "3.0.0" % Test
+libraryDependencies += "com.h2database" % "h2" % "1.4.194"
+libraryDependencies += jdbc
+libraryDependencies += evolutions
+libraryDependencies ++= Seq(evolutions, jdbc)
+libraryDependencies += "org.postgresql" % "postgresql" % "42.1.2.jre6"
+libraryDependencies += "com.typesafe.play" %% "play-slick" % "3.0.0"
+

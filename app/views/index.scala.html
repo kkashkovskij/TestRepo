@@ -1,20 +1,47 @@
-@*
- * This template takes a single argument, a String containing a
- * message to display.
- *@
-@(message: String)
+@import scala.collection.mutable
+@(articles: Form[ArticleFormModel],
+        chapters: Form[ChapterFormModel],
+        pathList: mutable.MutableList[String],
+        pathMap: mutable.HashMap[String, Entity])(implicit messages:Messages,request: RequestHeader, messagesProvider: MessagesProvider)
 
-@*
- * Call the `main` template with two arguments. The first
- * argument is a `String` with the title of the page, the second
- * argument is an `Html` object containing the body of the page.
- *@
-@main("Welcome to Play") {
 
-    @*
-     * Get an `Html` object by calling the built-in Play welcome
-     * template and passing a `String` message.
-     *@
-    @welcome(message, style = "scala")
+
+@main("articles & chapters database") {
+
+    @helper.form(action = routes.Application.insertArticle()) {
+        @helper.inputText(articles("shortName"))
+        @helper.inputText(articles("fullName"))
+        @helper.inputText(articles("text"))
+        @helper.inputText(articles("chapterId"))
+
+        <button type="submit">Create article</button>
+    }
+
+    @helper.form(action = routes.Application.insertChapter()) {
+        @helper.inputText(articles("shortName"))
+        @helper.inputText(articles("fullName"))
+        @helper.inputText(articles("text"))
+        @helper.inputText(articles("parentId"))
+
+        <button type="submit">Create chapter</button>
+    }
+
+    @for(s <- pathList){
+
+        <ul><a href='@routes.Application.info(s)'> @pathMap.get(s)</a>  <a href='@routes.Application.delete(s)'>[x]</a></ul>
+    }
+
+
+@*<ul>@iteration(0,1, art, chap)</ul>*@
+
 
 }
+
+
+
+
+
+
+
+
+
