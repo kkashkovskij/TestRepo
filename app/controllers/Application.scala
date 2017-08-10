@@ -9,8 +9,8 @@ import play.api.data.Forms.{mapping, number, text}
 import play.api.i18n.{I18nSupport, Messages}
 import play.api.mvc.{AbstractController, ControllerComponents}
 
-import scala.collection.mutable
 import scala.concurrent.duration._
+import scala.collection.mutable
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 

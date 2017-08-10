@@ -4,8 +4,6 @@
         pathList: mutable.MutableList[String],
         pathMap: mutable.HashMap[String, Entity])(implicit messages:Messages,request: RequestHeader, messagesProvider: MessagesProvider)
 
-
-
 @main("articles & chapters database") {
 
     @helper.form(action = routes.Application.insertArticle()) {
@@ -30,10 +28,6 @@
 
         <ul><a href='@routes.Application.info(s)'> @pathMap.get(s)</a>  <a href='@routes.Application.delete(s)'>[x]</a></ul>
     }
-
-
-@*<ul>@iteration(0,1, art, chap)</ul>*@
-
 
 }
 

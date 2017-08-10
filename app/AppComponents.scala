@@ -1,7 +1,7 @@
 import play.api.ApplicationLoader.Context
 import play.api.BuiltInComponentsFromContext
+import play.api.db.{DBComponents, Database, HikariCPComponents}
 import play.api.db.evolutions.EvolutionsComponents
-import play.api.db.{DBComponents, HikariCPComponents}
 import play.api.mvc.EssentialFilter
 import play.api.routing.Router
 
