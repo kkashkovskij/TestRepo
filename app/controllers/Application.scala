@@ -169,7 +169,7 @@ case class TreeChapter(chapter: Chapter){
 
   def getChapter(): Chapter = chapter
 
-  def getChildren():
+  def getChildren(): Seq[TreeChapter] = children
 
   def chapterToTreeChapter(chapters: Seq[Chapter]): Seq[TreeChapter] = {
 
