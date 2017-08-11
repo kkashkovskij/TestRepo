@@ -1,0 +1,22 @@
+@(chapters: Seq[(TreeChapter, Int)],
+        articles: Seq[Article],
+        prevNumber: String)
+
+@for(c <- chapters){
+
+    <li><a href = ''>@prevNumber@(c._2+1). @c._1.getChapter().getShortName</a> <a href = '@routes.Application.deleteChapter(c._1.getChapter().id)'>[x]</a></li>
+    @for(a <-articles){
+        @if(a.chapterId == c._1.getChapter().id){
+
+            <li><a href = ''>@a.shortName</a> <a href = '@routes.Application.deleteArticle(a.id)'>[x]</a></li>
+        }
+    }
+    @recursion(c._1.getChildrenWithIndex(), articles, prevNumber + (c._2+1).toString + ".")
+}
+
+
+
+@*treeChapters.map{case (treeChapter: TreeChapter, index: Int) => <ul> @index.toString @treeChapter.toString </ul>}*@
+
+
+

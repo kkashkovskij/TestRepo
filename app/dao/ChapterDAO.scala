@@ -2,15 +2,11 @@ package dao
 
 import javax.inject.Inject
 
-import controllers.ChapterFormModel
-
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import models.Chapter
-import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
+import play.api.db.slick.DatabaseConfigProvider
 import slick.jdbc.JdbcProfile
 import play.api.db.slick.HasDatabaseConfigProvider
-
-import scala.concurrent.ExecutionContext
 
 class ChapterDAO @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit executionContext: ExecutionContext) extends HasDatabaseConfigProvider[JdbcProfile] {
 
@@ -32,6 +28,10 @@ class ChapterDAO @Inject() (protected val dbConfigProvider: DatabaseConfigProvid
     if (text != "")db.run((for { a <- Chapters if a.id === id } yield a.text).update(text))
 
   }
+
+//  def getByParentId(parentId: Int): Seq[Chapter] = {
+//    Await.result(db.run(Chapters.filter(_.parentId === parentId).result).map{a => a}, 1.second)
+//  }
 
   private class ChaptersTable(tag: Tag) extends Table[Chapter] (tag, "chapters"){
 

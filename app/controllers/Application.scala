@@ -3,12 +3,11 @@ package controllers
 import javax.inject.Inject
 
 import dao.{ArticleDAO, ChapterDAO}
-import models.{Article, Chapter, Entity}
+import models.{Article, Chapter, TextItem}
 import play.api.data.Form
 import play.api.data.Forms.{mapping, number, text}
-import play.api.i18n.{I18nSupport, Messages}
+import play.api.i18n.{I18nSupport}
 import play.api.mvc.{AbstractController, ControllerComponents}
-
 import scala.concurrent.duration._
 import scala.collection.mutable
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -24,21 +23,15 @@ class Application @Inject() (
 //
 
   def index = Action.async {implicit request =>
-      val messages: Messages = request.messages
-      val message: String = messages("info.error")
-    articleDao.all().zip(chapterDao.all()).map { case (articles, chapters) => {
-
-
-        pathList.clear()
-        pathMap.clear()
-        numbersList.clear()
-        treeRoots.clear()
-        getFromdb()
-        setTreeNodes(null, 1) //TODO null, 1 - magic number
-        getAllPath()
-
+     // val messages: Messages = request.messages
+//      val message: String = messages("info.error")
+      articleDao.all().zip(chapterDao.all()).map { case (articles, chapters) => {
+      getFromdb()
+      val treeChapter = TreeChapter(null)
+      treeChapter.setChildren(chapters)
 //TODO все названия методов, классов, параметров должны быть смысловыми, чтобы прочитав можно было понять про что идет речь, что это за параметр, что будет делать метод, про что этот класс и т.д.
-      Ok(views.html.index(articleForm, chapterForm, pathList, pathMap))} }
+      Ok(views.html.index(articleForm, chapterForm, treeChapter, articles, chapters)) }
+  }
   }
 
   def info(s: String) = Action{implicit request =>
@@ -50,11 +43,14 @@ class Application @Inject() (
   }
 
   //TODO здесь нужно всего лишь Id передавать и удалять по Id, можно сделать два метода deleteChapter deleteArticle
-  def delete(s: String) = Action{
 
-        if (pathMap.get(s).orNull.getType == "chapter") chapterDao.delete(pathMap.get(s).orNull.getId)
-        else if (pathMap.get(s).orNull.getType == "article") articleDao.delete(pathMap.get(s).orNull.getId)
+  def deleteArticle(id: Int) = Action{implicit request =>
+    articleDao.delete(id)
+    Redirect(routes.Application.index)
+  }
 
+  def deleteChapter(id: Int) = Action{implicit request =>
+    chapterDao.delete(id)
     Redirect(routes.Application.index)
   }
 
@@ -121,15 +117,13 @@ class Application @Inject() (
       article.chapterId)).map(_ => Redirect(routes.Application.index))
   }
 
-
   //TODO избавиться от var
   var chapters: Seq[Chapter] = Seq[Chapter]()
   var articles: Seq[Article] = Seq[Article]()
-  var treeRoots: mutable.MutableList[TreeNode] = new mutable.MutableList[TreeNode]()
-  var numbersList: mutable.MutableList[String] = new mutable.MutableList[String]()
-  var pathList: mutable.MutableList[String] = new mutable.MutableList[String]()
-  var pathMap: mutable.HashMap[String, Entity] = new mutable.HashMap[String, Entity]()
-  var flag: Boolean = false
+  val numbersList: mutable.MutableList[String] = new mutable.MutableList[String]()
+  val pathList: mutable.MutableList[String] = new mutable.MutableList[String]()
+  val pathMap: mutable.HashMap[String, TextItem] = new mutable.HashMap[String, TextItem]()
+
 
   def getFromdb(): Unit = {
 
@@ -141,121 +135,49 @@ class Application @Inject() (
 
     }
 
-
-  //TODO такие методы сеттеры с возвращаемым значением unit нужно избегать
-  def setTreeNodes (treeNode: TreeNode, count: Int): Unit ={
-    var bufferNode: TreeNode = null
-    var i: Int = 1
-
-    for(c <- chapters) {
-      if (treeNode == null && c.parentId.isEmpty) {
-        bufferNode = new TreeNode(c, null, i, new mutable.MutableList[TreeNode], new mutable.MutableList[Article])
-        setArticles(bufferNode)
-        treeRoots.+=:(bufferNode)
-        setTreeNodes(bufferNode, 1)
-        i+=1
-      } else if (treeNode!=null && (treeNode.getData().id == c.parentId.getOrElse(0))){
-        bufferNode = new TreeNode(c, treeNode, i, new mutable.MutableList[TreeNode], new mutable.MutableList[Article])
-        treeNode.addChild(bufferNode)
-        setArticles(bufferNode)
-        setTreeNodes(bufferNode, 1)
-        i+=1
-      }
-    }
-  }
-
-  def setArticles(treeNode: TreeNode): Unit = {
-    for (a <- articles){
-      if(a.chapterId == treeNode.getData().id) {
-        treeNode.addArticle(a)
-      }
-    }
-  }
-
-  def getPathList(n: TreeNode, path: String, number: String): Unit = {
-
-
-    var str: String = ""
-    var num: String = ""
-    if (number == "") num = n.getChapterNumber().toString + "."
-    else num = number + n.getChapterNumber().toString + "."
-    str = path + "/" + num + n.getData().shortName
-
-    for(c <- n.getChildren()){
-      getPathList(c, str, num)
-    }
-
-    for(a <- n.getArticles()){
-      pathList.+=:(str + "/" + a.shortName)
-      pathMap.put(str + "/" + a.shortName, a)
-      numbersList.+=:("art:")
-    }
-    pathList.+=:(str)
-    pathMap.put(str, n)
-    numbersList.+=:(num)
-  }
-
-  def getAllPath(): Unit = {
-    for (root <- treeRoots){
-      getPathList(root, "", "")
-    }
-  }
-
-
 }
+//TODO такие методы сеттеры с возвращаемым значением unit нужно избегать
 
 case class ChapterFormModel(shortName: String, fullName: String, text: String, parentId: Int)
 
 case class ArticleFormModel(shortName: String, fullName: String, text: String, chapterId: Int)
 
 case class ModifyForm(shortName: String, fullName: String, text: String)
-
 //TODO переделать структуру дерева
-case class TreeNode (data: Chapter, parent: TreeNode, chapterNumber: Int, children: mutable.MutableList[TreeNode], articleList: mutable.MutableList[Article]) extends Entity{
-  def addChild(treeNode: TreeNode): Unit ={
-    children.+=:(treeNode)
-  }
-  def addArticle(article: Article): Unit ={
-    articleList.+=:(article)
-  }
-  def getData(): Chapter= {
-    data
-  }
-  def getChildren(): mutable.MutableList[TreeNode] = {
-    this.children
-  }
+case class TreeChapter(chapter: Chapter){
 
-  def getChapterNumber(): Int = {
-    this.chapterNumber
-  }
+  private var children: Seq[TreeChapter] = Seq.empty
+  private var childrenWithIndex: Seq[(TreeChapter, Int)] = Seq.empty
 
-  def getArticles(): mutable.MutableList[Article] = {
-    this.articleList
-  }
-
-  def getFullName(): String = {
-    data.getFullName
-  }
-
-  override def getChildrenList: mutable.MutableList[String] = {
-    val list: mutable.MutableList[String] = new mutable.MutableList[String]()
+  def setChildren(chapters: Seq[Chapter]): Unit = {
+    if (chapter != null)
+    children = chapterToTreeChapter(chapters.filter(_.parentId.getOrElse(0) == chapter.id))
+    else children = chapterToTreeChapter(chapters.filter(_.parentId.getOrElse(None) == None))
+    childrenToChildrenWithIndex()
     for (c <- children){
-      list.+=:(c.toString)
+      c.setChildren(chapters)
     }
-
-    for (a <- articleList){
-      list.+=:(a.toString)
-    }
-
-    list
-
   }
-  override def toString: String = data.toString
 
-  override def getText: String = data.text
+  def childrenToChildrenWithIndex(): Unit = {
+    for (c <- children){
+      childrenWithIndex = children.zipWithIndex
+    }
+  }
 
-  def getId: Int = data.getId
+  def getChildrenWithIndex(): Seq[(TreeChapter, Int)] = childrenWithIndex
 
-  def getType: String = data.getType
+  def getChapter(): Chapter = chapter
+
+  def getChildren():
+
+  def chapterToTreeChapter(chapters: Seq[Chapter]): Seq[TreeChapter] = {
+
+    for(c <- chapters){
+      children :+= TreeChapter(c)
+    }
+    children
+  }
+
 }
 

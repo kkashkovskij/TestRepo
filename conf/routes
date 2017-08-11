@@ -1,10 +1,12 @@
+
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
 
 # Home page
 GET     /                             controllers.Application.index
 GET     /info                         controllers.Application.info(s: String)
-GET    /delete                        controllers.Application.delete(s: String)
+GET    /delete/article                controllers.Application.deleteArticle(id: Int)
+GET    /delete/chapter                controllers.Application.deleteChapter(id: Int)
 
 # Home page
 POST    /insert/article                controllers.Application.insertArticle

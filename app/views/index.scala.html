@@ -1,8 +1,8 @@
-@import scala.collection.mutable
 @(articles: Form[ArticleFormModel],
         chapters: Form[ChapterFormModel],
-        pathList: mutable.MutableList[String],
-        pathMap: mutable.HashMap[String, Entity])(implicit messages:Messages,request: RequestHeader, messagesProvider: MessagesProvider)
+        treeChapter: TreeChapter,
+        article: Seq[Article],
+        chapter: Seq[Chapter])(implicit messages:Messages,request: RequestHeader, messagesProvider: MessagesProvider)
 
 @main("articles & chapters database") {
 
@@ -24,10 +24,8 @@
         <button type="submit">Create chapter</button>
     }
 
-    @for(s <- pathList){
+@recursion(treeChapter.getChildrenWithIndex(), article, "")
 
-        <ul><a href='@routes.Application.info(s)'> @pathMap.get(s)</a>  <a href='@routes.Application.delete(s)'>[x]</a></ul>
-    }
 
 }
 
