@@ -17,18 +17,14 @@ class ArticleDAO @Inject()(protected val dbConfigProvider: DatabaseConfigProvide
 
   def all(): Future[Seq[Article]] = db.run(Articles.result)
 
-  // TODO нужно возворащать вставленный артикль
-  def insert(article: Article): Future[Unit] = db.run(Articles += article).map { _ => () }
+  def insert(article: Article): Future[Unit] = {
+    db.run(Articles += article).map { _ => () }
+  }
 
   def delete(id: Int): Unit = { db.run(Articles.filter(_.id === id).delete)}
 
-  //TODO метод должен получать объект Article уже измененный и апдейтить его вбазе целиком. Такой метод лучше назвать update
-  def modify(id: Int, shortName: String, fullName: String, text: String): Unit = {
-
-    if (shortName != "") db.run((for {a <- Articles if a.id === id} yield a.shortName).update(shortName))
-    if (fullName != "") db.run((for {a <- Articles if a.id === id} yield a.fullName).update(fullName))
-    if (text != "") db.run((for {a <- Articles if a.id === id} yield a.text).update(text))
-
+  def edit(article: Article): Unit = {
+    db.run(Articles.filter(_.id === article.id).update(article))
   }
 
   private class ArticlesTable(tag: Tag) extends Table[Article](tag, "articles") {

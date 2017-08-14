@@ -13,62 +13,116 @@ import scala.collection.mutable
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 
+class Application @Inject()(
+                             articleDao: ArticleDAO,
+                             chapterDao: ChapterDAO,
+                             controllerComponents: ControllerComponents
+                           )(implicit executionContext: ExecutionContext) extends AbstractController(controllerComponents) with I18nSupport {
 
-class Application @Inject() (
-                              articleDao: ArticleDAO,
-                              chapterDao: ChapterDAO,
-                              controllerComponents: ControllerComponents
-                            )(implicit executionContext: ExecutionContext) extends AbstractController(controllerComponents) with I18nSupport{
 
-//
+  def index = Action.async { implicit request =>
 
-  def index = Action.async {implicit request =>
-     // val messages: Messages = request.messages
-//      val message: String = messages("info.error")
-      articleDao.all().zip(chapterDao.all()).map { case (articles, chapters) => {
-      getFromdb()
+    articleDao.all().zip(chapterDao.all()).map { case (articles, chapters) => {
       val treeChapter = TreeChapter(null)
       treeChapter.setChildren(chapters)
-//TODO все названия методов, классов, параметров должны быть смысловыми, чтобы прочитав можно было понять про что идет речь, что это за параметр, что будет делать метод, про что этот класс и т.д.
-      Ok(views.html.index(articleForm, chapterForm, treeChapter, articles, chapters)) }
-  }
-  }
-
-  def info(s: String) = Action{implicit request =>
-
-    val fullName: String = pathMap.get(s).orNull.getFullName
-    val text: String = pathMap.getOrElse(s, null).getText
-    val children: mutable.MutableList[String] = pathMap.getOrElse(s, null).getChildrenList // TODO тут фигня какя-то нужно смотреть
-    Ok(views.html.info(s,fullName,text, children, modifyForm))
+      Ok(views.html.index(articleForm, chapterForm, treeChapter, articles, chapters))
+    }
+    }
   }
 
-  //TODO здесь нужно всего лишь Id передавать и удалять по Id, можно сделать два метода deleteChapter deleteArticle
+  def chapterInfo(chapterId: Int) = Action { implicit request =>
 
-  def deleteArticle(id: Int) = Action{implicit request =>
+
+    var result: TreeChapter = TreeChapter(null)
+    var path: String = ""
+
+    def getChapterById(treeChapter: TreeChapter): Unit = {
+
+      if ((treeChapter.getChapter() != null) && (treeChapter.getChapter().id == chapterId)) result = treeChapter
+      else {
+        for (c <- treeChapter.getChildren()) {
+          getChapterById(c)
+        }
+      }
+    }
+
+    def getChapterPath(chapter: Chapter): Unit = {
+
+      for (c <- chapters) {
+        if (chapter.parentId.getOrElse(0) == c.id) {
+          path = c.shortName + "/" + path
+          getChapterPath(c)
+        }
+      }
+    }
+
+    val treeChapter = TreeChapter(null)
+    treeChapter.setChildren(chapters)
+    getChapterById(treeChapter)
+    path = result.getChapter().shortName
+    getChapterPath(result.getChapter())
+
+    Ok(views.html.chapterInfo(result, chapters, articles, path, chapterForm.fill(ChapterFormModel(result.getChapter().shortName,
+      result.getChapter().fullName,
+      result.getChapter().text,
+      result.getChapter().parentId.getOrElse(-1)))))
+  }
+
+  def articleInfo(articleId: Int) = Action { implicit request =>
+
+    var article = articles.apply(0)
+
+    for (a <- articles) {
+      if (a.id == articleId) article = a
+    }
+
+    var path = article.shortName
+
+    for (c <- chapters)
+      if (c.id == article.chapterId) getArticlePath(c)
+
+    def getArticlePath(chapter: Chapter): Unit = {
+
+      for (c <- chapters) {
+        if (chapter.parentId.getOrElse(0) == c.id) {
+          path = c.shortName + "/" + path
+          getArticlePath(c)
+        }
+      }
+    }
+
+    Ok(views.html.articleInfo(article, path, articleForm.fill(ArticleFormModel(article.shortName,
+      article.fullName,
+      article.text,
+      article.chapterId))))
+  }
+
+
+  def deleteArticle(id: Int) = Action { implicit request =>
     articleDao.delete(id)
     Redirect(routes.Application.index)
   }
 
-  def deleteChapter(id: Int) = Action{implicit request =>
+  def deleteChapter(id: Int) = Action { implicit request =>
     chapterDao.delete(id)
     Redirect(routes.Application.index)
   }
 
-  def edit(s: String) = Action{ implicit request =>
+  def editChapter(id: Int) = Action { implicit request =>
 
-    val mod: ModifyForm = modifyForm.bindFromRequest.get
-
-    //TODO нужно нормально ресолвить форму с паттернматчингом если нужно на конкретный case class, без нулов, без instanceOf
-    val instance = pathMap.getOrElse(s, null)
-    if (instance.getType == "article")
-      articleDao.modify(instance.getId, mod.shortName, mod.fullName, mod.text)
-    else if (pathMap.get(s).getOrElse(null).getType == "chapter")
-      chapterDao.modify(instance.getId, mod.shortName, mod.fullName, mod.text)
-
+    val edit: ChapterFormModel = chapterForm.bindFromRequest.get
+    chapterDao.edit(Chapter(id, edit.shortName, edit.fullName, edit.text, if (edit.parentId == -1) None else Some(edit.parentId)))
     Redirect(routes.Application.index)
   }
 
-  val chapterForm :Form[ChapterFormModel] = Form(
+  def editArticle(id: Int) = Action { implicit request =>
+
+    val edit: ArticleFormModel = articleForm.bindFromRequest.get
+    articleDao.edit(Article(id, edit.shortName, edit.fullName, edit.text, edit.chapterId))
+    Redirect(routes.Application.index)
+  }
+
+  val chapterForm: Form[ChapterFormModel] = Form(
     mapping(
       "shortName" -> text,
       "fullName" -> text,
@@ -86,81 +140,67 @@ class Application @Inject() (
     )(ArticleFormModel.apply)(ArticleFormModel.unapply)
   )
 
-  //TODO Лишняя форма
-  val modifyForm: Form[ModifyForm] = Form(
-    mapping(
-      "shortName" -> text,
-      "fullName" -> text,
-      "text" -> text,
-    )(ModifyForm.apply)(ModifyForm.unapply)
-  )
-
 
   private def trimToOption(str: String): Option[String] = {
-    val trimed =  str.trim
-    if(trimed.isEmpty) None else Some(trimed)
+    val trimed = str.trim
+    if (trimed.isEmpty) None else Some(trimed)
   }
 
-  def insertChapter = Action.async{ implicit request =>
+  def insertChapter = Action.async { implicit request =>
     val chapter: ChapterFormModel = chapterForm.bindFromRequest.get
     chapterDao.insert(
       Chapter(1, chapter.shortName,
         chapter.fullName,
         chapter.text,
-      if(chapter.parentId == -1) None else Some(chapter.parentId))).map(_ => Redirect(routes.Application.index))
+        if (chapter.parentId == -1) None else Some(chapter.parentId))).map(_ => Redirect(routes.Application.index))
   }
 
   def insertArticle =
-    Action.async{ implicit request =>
-    val article: ArticleFormModel = articleForm.bindFromRequest.get
-    articleDao.insert(Article(1, article.shortName, article.fullName, article.text,
-      article.chapterId)).map(_ => Redirect(routes.Application.index))
-  }
-
-  //TODO избавиться от var
-  var chapters: Seq[Chapter] = Seq[Chapter]()
-  var articles: Seq[Article] = Seq[Article]()
-  val numbersList: mutable.MutableList[String] = new mutable.MutableList[String]()
-  val pathList: mutable.MutableList[String] = new mutable.MutableList[String]()
-  val pathMap: mutable.HashMap[String, TextItem] = new mutable.HashMap[String, TextItem]()
-
-
-  def getFromdb(): Unit = {
-
-      val chaptersF: Future[Seq[Chapter]] = chapterDao.all()
-      val articlesF: Future[Seq[Article]] = articleDao.all()
-    //TODO убрать эвейты
-      chapters = Await.result(chaptersF, 1.second).sortBy(_.id)
-      articles = Await.result(articlesF, 1.second).sortBy(_.id)
-
+    Action.async { implicit request =>
+      val article: ArticleFormModel = articleForm.bindFromRequest.get
+      articleDao.insert(Article(1, article.shortName, article.fullName, article.text,
+        article.chapterId)).map(_ => Redirect(routes.Application.index))
     }
 
+  val chapters: Seq[Chapter] = getChaptersFromdb()
+  val articles: Seq[Article] = getArticlesFromdb()
+
+  //TODO убрать эвейты
+  def getArticlesFromdb(): Seq[Article] = {
+    val articlesF: Future[Seq[Article]] = articleDao.all()
+    Await.result(articlesF, 1.second).sortBy(_.id)
+  }
+
+  def getChaptersFromdb(): Seq[Chapter] = {
+    val chaptersF: Future[Seq[Chapter]] = chapterDao.all()
+    Await.result(chaptersF, 1.second).sortBy(_.id)
+  }
 }
-//TODO такие методы сеттеры с возвращаемым значением unit нужно избегать
+
 
 case class ChapterFormModel(shortName: String, fullName: String, text: String, parentId: Int)
 
 case class ArticleFormModel(shortName: String, fullName: String, text: String, chapterId: Int)
 
 case class ModifyForm(shortName: String, fullName: String, text: String)
-//TODO переделать структуру дерева
-case class TreeChapter(chapter: Chapter){
+
+case class TreeChapter(chapter: Chapter) {
 
   private var children: Seq[TreeChapter] = Seq.empty
   private var childrenWithIndex: Seq[(TreeChapter, Int)] = Seq.empty
 
   def setChildren(chapters: Seq[Chapter]): Unit = {
     if (chapter != null)
-    children = chapterToTreeChapter(chapters.filter(_.parentId.getOrElse(0) == chapter.id))
+      children = chapterToTreeChapter(chapters.filter(_.parentId.getOrElse(0) == chapter.id))
     else children = chapterToTreeChapter(chapters.filter(_.parentId.getOrElse(None) == None))
     childrenToChildrenWithIndex()
-    for (c <- children){
+    for (c <- children) {
       c.setChildren(chapters)
     }
   }
 
   def childrenToChildrenWithIndex(): Unit = {
-    for (c <- children){
+    for (c <- children) {
       childrenWithIndex = children.zipWithIndex
     }
   }
@@ -173,7 +213,7 @@ case class TreeChapter(chapter: Chapter){
 
   def chapterToTreeChapter(chapters: Seq[Chapter]): Seq[TreeChapter] = {
 
-    for(c <- chapters){
+    for (c <- chapters) {
       children :+= TreeChapter(c)
     }
     children

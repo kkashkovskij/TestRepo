@@ -1,0 +1,48 @@
+
+@(treeChapter: TreeChapter,
+        chapters: Seq[Chapter],
+        articles: Seq[Article],
+        path: String,
+        chaptersForm: Form[ChapterFormModel])(implicit messages:Messages,request: RequestHeader, messagesProvider: MessagesProvider)
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+
+        <title>@treeChapter.getChapter().fullName</title>
+        <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
+        <link rel="shortcut icon" type="image/png" href="@routes.Assets.versioned("images/favicon.png")">
+        <script src="@routes.Assets.versioned("javascripts/hello.js")" type="text/javascript"></script>
+    </head>
+    <body>
+
+        <li>
+            <ul>Путь: @path </ul>
+            <ul>Название главы: @treeChapter.getChapter().fullName</ul>
+            <ul>текст: @treeChapter.getChapter().text</ul>
+            <ul>Список входящих глав:</ul>
+
+            @for(c <- treeChapter.getChildren()){
+                <ul>@c.getChapter().toString</ul>
+            }
+
+            <ul>Список входящих статей:</ul>
+
+            @for(a <- articles){
+                <ul>@a.toString</ul>
+            }
+
+        </li>
+
+        @helper.form(action = routes.Application.editChapter(treeChapter.getChapter().id)) {
+            @helper.inputText(chaptersForm("shortName"))
+            @helper.inputText(chaptersForm("fullName"))
+            @helper.inputText(chaptersForm("text"))
+            @helper.inputText(chaptersForm("parentId"))
+
+            <button type="submit">Edit</button>
+        }
+
+    </body>
+</html>
+

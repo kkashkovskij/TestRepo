@@ -17,3 +17,5 @@ libraryDependencies ++= Seq(evolutions, jdbc)
 libraryDependencies += "org.postgresql" % "postgresql" % "42.1.2.jre6"
 libraryDependencies += "com.typesafe.play" %% "play-slick" % "3.0.0"
 
+routesImport += "controllers._"
+routesImport += "models._"

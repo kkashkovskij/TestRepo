@@ -15,23 +15,15 @@ class ChapterDAO @Inject() (protected val dbConfigProvider: DatabaseConfigProvid
 
   def all(): Future[Seq[Chapter]] = db.run(Chapters.result)
 
-  // TODO нужно возворащать вставленный артикль
-  def insert(chapter: Chapter): Future[Unit] = db.run(Chapters += chapter).map { _ => () }
+  def insert(chapter: Chapter): Future[Unit] = {
+    db.run(Chapters += chapter).map { _ => () }
+  }
 
   def delete(id: Int): Unit ={ db.run(Chapters.filter(_.id === id).delete) }
 
-  //TODO метод должен получать объект Article уже измененный и апдейтить его вбазе целиком. Такой метод лучше назвать update
-  def modify(id: Int, shortName: String, fullName: String, text: String): Unit = {
-
-    if (shortName != "") db.run((for { a <- Chapters if a.id === id } yield a.shortName).update(shortName))
-    if (fullName != "")db.run((for { a <- Chapters if a.id === id } yield a.fullName).update(fullName))
-    if (text != "")db.run((for { a <- Chapters if a.id === id } yield a.text).update(text))
-
+  def edit(chapter: Chapter): Unit = {
+    db.run(Chapters.filter(_.id === chapter.id).update(chapter))
   }
-
-//  def getByParentId(parentId: Int): Seq[Chapter] = {
-//    Await.result(db.run(Chapters.filter(_.parentId === parentId).result).map{a => a}, 1.second)
-//  }
 
   private class ChaptersTable(tag: Tag) extends Table[Chapter] (tag, "chapters"){
 
